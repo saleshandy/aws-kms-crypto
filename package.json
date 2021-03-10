@@ -1,0 +1,22 @@
+{
+  "name": "aws-kms-crypto",
+  "version": "1.0.0",
+  "description": "Package that lets you integrate AWS KMS seamlessly in your javascript project",
+  "main": "index.js",
+  "contributors": [
+    "Vishal Shaw <vishal@saleshandy.com> (https://github.com/vishal-shaw)"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.860.0",
+    "winston": "^3.3.3"
+  },
+  "keywords": [
+    "aws kms",
+    "hsm",
+    "encryption",
+    "decryption",
+    "cloudhsm"
+  ],
+  "types": "./index.d.ts"
+}
