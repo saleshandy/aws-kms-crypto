@@ -17,24 +17,24 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
     getMessages: "Get lists of messages",
     userHistory: "Get user history",
   });
-  constructor({ accessKeyId, secretAccessKey, region, KeyId }) {
-    super({ accessKeyId, secretAccessKey, region, KeyId });
+  constructor({ accessKeyId, secretAccessKey, region, keyId }) {
+    super({ accessKeyId, secretAccessKey, region, keyId });
   }
   async encryptToken({
     tokenPayload,
     ipAddress,
-    shUser,
+    user,
     tokenOwner,
     reason,
-    role,
+    userRole,
   }) {
     try {
       const isCredentialsValid = this.validator({
         ipAddress,
-        shUser,
+        user,
         tokenOwner,
         reason,
-        role,
+        userRole,
       });
 
       if (isCredentialsValid) {
@@ -51,18 +51,18 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
   async decryptToken({
     encryptedTokenPayload,
     ipAddress,
-    shUser,
+    user,
     tokenOwner,
     reason,
-    role,
+    userRole,
   }) {
     try {
       const isCredentialsValid = this.validator({
         ipAddress,
-        shUser,
+        user,
         tokenOwner,
         reason,
-        role,
+        userRole,
       });
       if (isCredentialsValid) {
         try {
@@ -79,30 +79,30 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
     }
   }
 
-  validator({ ipAddress, shUser, tokenOwner, reason, role }) {
+  validator({ ipAddress, user, tokenOwner, reason, userRole }) {
     let isCredentialsValid = false;
-    if (ipAddress && shUser && tokenOwner && reason && role) {
+    if (ipAddress && user && tokenOwner && reason && userRole) {
       isCredentialsValid = true;
     }
     setTimeout(() => {
       this.logger({
         ipAddress,
-        shUser,
+        user,
         tokenOwner,
         reason,
-        role,
+        userRole,
       });
     }, 0);
     return isCredentialsValid;
   }
 
-  logger({ ipAddress, shUser, tokenOwner, reason, role }) {
+  logger({ ipAddress, user, tokenOwner, reason, userRole }) {
     const logJSON = JSON.stringify({
       ipAddress,
-      shUser,
+      user,
       tokenOwner,
       reason,
-      role,
+      userRole,
     });
     logger.info({
       level: "info",
