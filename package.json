@@ -1,5 +1,5 @@
 {
-  "name": "aws-kms-crypto",
+  "name": "@saleshandy/aws-kms-crypto",
   "version": "1.0.0",
   "description": "Package that lets you integrate AWS KMS seamlessly in your javascript project",
   "main": "index.js",
@@ -18,5 +18,18 @@
     "decryption",
     "cloudhsm"
   ],
-  "types": "./index.d.ts"
+  "types": "./index.d.ts",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saleshandy/aws-kms-crypto.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/saleshandy/aws-kms-crypto/issues"
+  },
+  "homepage": "https://github.com/saleshandy/aws-kms-crypto#readme"
 }

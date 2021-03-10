@@ -6,8 +6,8 @@ class AWSKMSCrypto {
   KeyId;
   kmsClient;
 
-  constructor({ accessKeyId, secretAccessKey, region, KeyId }) {
-    this.KeyId = KeyId;
+  constructor({ accessKeyId, secretAccessKey, region, keyId }) {
+    this.KeyId = keyId;
     this.kmsClient = new AWS.KMS({
       accessKeyId,
       secretAccessKey,
