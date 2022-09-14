@@ -68,14 +68,14 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
         try {
           return await this.decrypt(encryptedTokenPayload);
         } catch (e) {
-          throw new Error("Invalid refresh token");
+          throw new Error("Error while decrypting token: ", e);
         }
       } else {
-        throw new Error("Credentials Invalid");
+        throw new Error("Decryption payload invalid");
       }
     } catch (e) {
       console.log(e);
-      return "Credentials Invalid";
+      return "Error while decrypting token: ", e;
     }
   }
 
