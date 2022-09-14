@@ -71,11 +71,20 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
           throw new Error("Error while decrypting token: ", e);
         }
       } else {
-        throw new Error("Decryption payload invalid");
+        throw new Error(
+          "Decryption payload invalid: ",
+          JSON.stringify({
+            ipAddress,
+            user,
+            tokenOwner,
+            reason,
+            userRole,
+          })
+        );
       }
     } catch (e) {
       console.log(e);
-      return "Error while decrypting token: ", e;
+      return e;
     }
   }
 
