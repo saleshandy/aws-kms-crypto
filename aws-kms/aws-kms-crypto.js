@@ -36,6 +36,7 @@ class AWSKMSCrypto {
   }
 
   decrypt(cipherText) {
+    console.log(cipherText, "------------8");
     const buf = Buffer.from(cipherText, "base64");
 
     return new Promise((resolve, reject) => {
