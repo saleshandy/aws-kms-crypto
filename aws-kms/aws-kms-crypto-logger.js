@@ -145,7 +145,7 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
     }
   }
 
-  divideAndStringifyCipherText(tokenPayload) {
+  divideAndStringifyCipherText(plaintext) {
     const tokenPayload = JSON.parse(plaintext);
     const { accessToken, refreshToken, expiresIn } = tokenPayload;
 
