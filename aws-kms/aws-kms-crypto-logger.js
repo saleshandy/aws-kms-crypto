@@ -71,7 +71,7 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
       const { accessTokenObj, refreshTokenAndExpireInObj } =
         this.divideAndStringifyCipherText(tokenPayload);
 
-      const aCipherText = await this.encrypt(accessTokenObj);
+      const cipherTextForAccessToken = await this.encrypt(accessTokenObj);
 
       const cipherTextForRefreshTokenAndExpireIn = await this.encrypt(
         refreshTokenAndExpireInObj
