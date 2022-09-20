@@ -68,19 +68,21 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
        * is exceeded
        */
 
-      const { accessTokenObj, refreshTokenAndExpireInObj } =
+      const { firstHalfOfAccessTokenObj, remainingTokenPayloadObj } =
         this.divideAndStringifyCipherText(tokenPayload);
 
-      const cipherTextForAccessToken = await this.encrypt(accessTokenObj);
+      const cipherTextForFirstHalfOfAccessToken = await this.encrypt(
+        firstHalfOfAccessTokenObj
+      );
 
-      const cipherTextForRefreshTokenAndExpireIn = await this.encrypt(
-        refreshTokenAndExpireInObj
+      const cipherTextForRemainingTokenPayload = await this.encrypt(
+        remainingTokenPayloadObj
       );
 
       return (
-        cipherTextForAccessToken +
+        cipherTextForFirstHalfOfAccessToken +
         encryptionJoiner +
-        cipherTextForRefreshTokenAndExpireIn
+        cipherTextForRemainingTokenPayload
       );
     } catch (e) {
       console.log(e);
@@ -129,15 +131,17 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
 
       const cipherArray = this.splitCipherTextByJoiner(encryptedTokenPayload);
 
-      const cipherTextForAccessToken = await this.decrypt(cipherArray[0]);
+      const cipherTextForFirstHalfOfAccessToken = await this.decrypt(
+        cipherArray[0]
+      );
 
-      const cipherTextForRefreshTokenAndExpireIn = await this.decrypt(
+      const cipherTextForRemainingTokenPayload = await this.decrypt(
         cipherArray[1]
       );
 
       return this.prepareDecryptResponse(
-        cipherTextForAccessToken,
-        cipherTextForRefreshTokenAndExpireIn
+        cipherTextForFirstHalfOfAccessToken,
+        cipherTextForRemainingTokenPayload
       );
     } catch (e) {
       console.log(`Error while decrypting token: ${e}`);
@@ -149,25 +153,37 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
     const tokenPayload = JSON.parse(plaintext);
     const { accessToken, refreshToken, expiresIn } = tokenPayload;
 
-    const accessTokenObj = JSON.stringify({ accessToken });
-    const refreshTokenAndExpireInObj = JSON.stringify({
+    const firstHalfOfAccessToken = accessToken.substring(
+      0,
+      accessToken.length / 2
+    );
+    const secondHalfOfAccessToken = accessToken.substring(
+      accessToken.length / 2
+    );
+
+    const firstHalfOfAccessTokenObj = JSON.stringify({
+      accessToken: firstHalfOfAccessToken,
+    });
+    const remainingTokenPayloadObj = JSON.stringify({
+      accessToken: secondHalfOfAccessToken,
       refreshToken,
       expiresIn,
     });
 
-    return { accessTokenObj, refreshTokenAndExpireInObj };
+    return { firstHalfOfAccessTokenObj, remainingTokenPayloadObj };
   }
 
   validateCipherText(tokenPayload) {
     return tokenPayload.length < encryptTextLimit;
   }
 
-  prepareDecryptResponse(aCipherText, bCipherText) {
-    const parsedACipherText = JSON.parse(aCipherText);
-    const parsedBCipherText = JSON.parse(bCipherText);
+  prepareDecryptResponse(cipherTextForFirstHalfOfAccessToken, cipherTextForRemainingTokenPayload) {
+    const parsedACipherText = JSON.parse(cipherTextForFirstHalfOfAccessToken);
+    const parsedBCipherText = JSON.parse(cipherTextForRemainingTokenPayload);
 
     const decryptedObj = {
-      accessToken: parsedACipherText.accessToken,
+      accessToken:
+        parsedACipherText.accessToken + parsedBCipherText.accessToken,
       refreshToken: parsedBCipherText.refreshToken,
       expiresIn: parsedBCipherText.expiresIn,
     };
