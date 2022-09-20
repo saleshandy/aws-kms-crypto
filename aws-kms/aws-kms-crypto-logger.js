@@ -68,19 +68,21 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
        * is exceeded
        */
 
-      const { accessTokenObj, refreshTokenAndExpireInObj } =
+      const { firstHalfOfAccessToken, remainingTokenPayloadObj } =
         this.divideAndStringifyCipherText(tokenPayload);
 
-      const cipherTextForAccessToken = await this.encrypt(accessTokenObj);
+      const cipherTextForFirstHalfOfAccessToken = await this.encrypt(
+        firstHalfOfAccessToken
+      );
 
-      const cipherTextForRefreshTokenAndExpireIn = await this.encrypt(
-        refreshTokenAndExpireInObj
+      const cipherTextForRemainingTokenPayload = await this.encrypt(
+        remainingTokenPayloadObj
       );
 
       return (
-        cipherTextForAccessToken +
+        cipherTextForFirstHalfOfAccessToken +
         encryptionJoiner +
-        cipherTextForRefreshTokenAndExpireIn
+        cipherTextForRemainingTokenPayload
       );
     } catch (e) {
       console.log(e);
@@ -129,15 +131,17 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
 
       const cipherArray = this.splitCipherTextByJoiner(encryptedTokenPayload);
 
-      const cipherTextForAccessToken = await this.decrypt(cipherArray[0]);
+      const cipherTextForFirstHalfOfAccessToken = await this.decrypt(
+        cipherArray[0]
+      );
 
-      const cipherTextForRefreshTokenAndExpireIn = await this.decrypt(
+      const cipherTextForRemainingTokenPayload = await this.decrypt(
         cipherArray[1]
       );
 
       return this.prepareDecryptResponse(
-        cipherTextForAccessToken,
-        cipherTextForRefreshTokenAndExpireIn
+        cipherTextForFirstHalfOfAccessToken,
+        cipherTextForRemainingTokenPayload
       );
     } catch (e) {
       console.log(`Error while decrypting token: ${e}`);
@@ -146,30 +150,70 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
   }
 
   divideAndStringifyCipherText(plaintext) {
+    /*
+    * As the accessToken length can be more than 4KB, We are dividing 
+    * it in half and then encrypting it.
+    * So when the token payload is more than 4KB, The encryption process will be like
+    * 
+    * 1st Call
+    * First half of access token (total length of access token divide by 2 )
+    * 
+    * 2nd Call
+    * {accessToken: Second half of access token, refreshToken: ...., expiresIn: ....}
+    */
+
+
+
     const tokenPayload = JSON.parse(plaintext);
     const { accessToken, refreshToken, expiresIn } = tokenPayload;
 
-    const accessTokenObj = JSON.stringify({ accessToken });
-    const refreshTokenAndExpireInObj = JSON.stringify({
+    const firstHalfOfAccessToken = accessToken.substring(
+      0,
+      accessToken.length / 2
+    );
+    const secondHalfOfAccessToken = accessToken.substring(
+      accessToken.length / 2
+    );
+
+    const remainingTokenPayloadObj = JSON.stringify({
+      accessToken: secondHalfOfAccessToken,
       refreshToken,
       expiresIn,
     });
 
-    return { accessTokenObj, refreshTokenAndExpireInObj };
+    return { firstHalfOfAccessToken, remainingTokenPayloadObj };
   }
 
   validateCipherText(tokenPayload) {
     return tokenPayload.length < encryptTextLimit;
   }
 
-  prepareDecryptResponse(aCipherText, bCipherText) {
-    const parsedACipherText = JSON.parse(aCipherText);
-    const parsedBCipherText = JSON.parse(bCipherText);
+  prepareDecryptResponse(
+    cipherTextForFirstHalfOfAccessToken,
+    cipherTextForRemainingTokenPayload
+  ) {
+
+    /* 
+    * cipherTextForFirstHalfOfAccessToken -> String (First half of access token)
+    * cipherTextForRemainingTokenPayload -> 
+    * {
+    *   accessToken: Second half of accessToken
+    *   refreshToken: ...
+    *   expiresIn: ...
+    * }
+    * 
+    * So to get accessToken, we are adding the cipherTextForFirstHalfOfAccessToken 
+    * and cipherTextForRemainingTokenPayload.accessToken
+    */
+
+
+    const parsedCipherText = JSON.parse(cipherTextForRemainingTokenPayload);
 
     const decryptedObj = {
-      accessToken: parsedACipherText.accessToken,
-      refreshToken: parsedBCipherText.refreshToken,
-      expiresIn: parsedBCipherText.expiresIn,
+      accessToken:
+        cipherTextForFirstHalfOfAccessToken + parsedCipherText.accessToken,
+      refreshToken: parsedCipherText.refreshToken,
+      expiresIn: parsedCipherText.expiresIn,
     };
 
     return JSON.stringify(decryptedObj);
