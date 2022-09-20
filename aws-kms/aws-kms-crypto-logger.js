@@ -40,7 +40,7 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
         userRole,
       });
 
-      if (isCredentialsValid) {
+      if (!isCredentialsValid) {
         throw new Error(
           `Encryption payload invalid: ${JSON.stringify({
             ipAddress,
@@ -52,7 +52,7 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
         );
       }
 
-      if (this.isTextLengthInLimit(tokenPayload)) {
+      if (this.validateCipherText(tokenPayload)) {
         return await this.encrypt(tokenPayload);
       }
 
@@ -73,9 +73,15 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
 
       const aCipherText = await this.encrypt(accessTokenObj);
 
-      const bCipherText = await this.encrypt(refreshTokenAndExpireInObj);
+      const cipherTextForRefreshTokenAndExpireIn = await this.encrypt(
+        refreshTokenAndExpireInObj
+      );
 
-      return aCipherText + encryptionJoiner + bCipherText;
+      return (
+        cipherTextForAccessToken +
+        encryptionJoiner +
+        cipherTextForRefreshTokenAndExpireIn
+      );
     } catch (e) {
       console.log(e);
       return e;
@@ -123,11 +129,16 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
 
       const cipherArray = this.splitCipherTextByJoiner(encryptedTokenPayload);
 
-      const aCipherText = await this.decrypt(cipherArray[0]);
+      const cipherTextForAccessToken = await this.decrypt(cipherArray[0]);
 
-      const bCipherText = await this.decrypt(cipherArray[1]);
+      const cipherTextForRefreshTokenAndExpireIn = await this.decrypt(
+        cipherArray[1]
+      );
 
-      return this.prepareDecryptResponse(aCipherText, bCipherText);
+      return this.prepareDecryptResponse(
+        cipherTextForAccessToken,
+        cipherTextForRefreshTokenAndExpireIn
+      );
     } catch (e) {
       console.log(`Error while decrypting token: ${e}`);
       return e;
@@ -135,27 +146,20 @@ class AWSKMSValidatorAndLogger extends AWSKMSCrypto {
   }
 
   divideAndStringifyCipherText(tokenPayload) {
-    let { accessTokenObj, refreshTokenAndExpireInObj } =
-      this.divideCipherText(tokenPayload);
+    const tokenPayload = JSON.parse(plaintext);
+    const { accessToken, refreshToken, expiresIn } = tokenPayload;
 
-    accessTokenObj = JSON.stringify(accessTokenObj);
-    refreshTokenAndExpireInObj = JSON.stringify(refreshTokenAndExpireInObj);
+    const accessTokenObj = JSON.stringify({ accessToken });
+    const refreshTokenAndExpireInObj = JSON.stringify({
+      refreshToken,
+      expiresIn,
+    });
 
     return { accessTokenObj, refreshTokenAndExpireInObj };
   }
 
-  isTextLengthInLimit(tokenPayload) {
-    return tokenPayload.length <= encryptTextLimit;
-  }
-
-  divideCipherText(plaintext) {
-    const tokenPayload = JSON.parse(plaintext);
-    const { accessToken, refreshToken, expiresIn } = tokenPayload;
-
-    return {
-      accessTokenObj: { accessToken },
-      refreshTokenAndExpireInObj: { refreshToken, expiresIn },
-    };
+  validateCipherText(tokenPayload) {
+    return tokenPayload.length < encryptTextLimit;
   }
 
   prepareDecryptResponse(aCipherText, bCipherText) {
